@@ -32,6 +32,12 @@ function Welcome() {
 
   };
 
+  const handleInbox = () => {
+
+    navigate("/inbox");
+
+  };
+
   return (
 
     <div className="welcome-page">
@@ -48,13 +54,20 @@ function Welcome() {
                 Welcome to your mail box
               </h1>
 
-              <div className="d-flex justify-content-center gap-3">
+              <div className="d-flex justify-content-center gap-3 flex-wrap">
 
                 <Button
                   variant="primary"
                   onClick={handleCompose}
                 >
                   Compose Mail
+                </Button>
+
+                <Button
+                  variant="success"
+                  onClick={handleInbox}
+                >
+                  Inbox
                 </Button>
 
                 <Button

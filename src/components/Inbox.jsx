@@ -1,219 +1,350 @@
-// Inbox.jsx
-
-import React from "react";
+import React, {
+  useEffect,
+  useReducer,
+} from "react";
 
 import {
   Container,
   Row,
   Col,
-  Form,
+  ListGroup,
+  Badge,
   Button,
+  Form,
+  InputGroup,
 } from "react-bootstrap";
 
 import {
   BsSearch,
-  BsStar,
   BsTrash,
-  BsArchive,
-  BsThreeDots,
+  BsStar,
+  BsArrowLeft,
 } from "react-icons/bs";
+
+import { useNavigate } from "react-router-dom";
+
+import API from "../api";
+
+import {
+  mailReducer,
+  initialState,
+} from "../reducers/mailReducer";
 
 import "./Inbox.css";
 
 function Inbox() {
+  const navigate = useNavigate();
 
-  const mails = [
+  const [state, dispatch] = useReducer(
+    mailReducer,
+    initialState
+  );
 
-    {
-      sender: "Wakefit",
-      subject:
-        "Lowest Price Ever on Mattress",
-      desc:
-        "Get Up to 45% off on Best Mattresses",
-      time: "8:29 am",
-    },
+  const userEmail =
+    localStorage.getItem("email");
 
-    {
-      sender: "Twitter",
-      subject:
-        "Ontario cuts electricity prices",
-      desc:
-        "What's happening News",
-      time: "8:17 am",
-    },
+  const fetchMails = async () => {
+    try {
+      dispatch({
+        type: "SET_LOADING",
+        payload: true,
+      });
 
-    {
-      sender: "Freshersworld",
-      subject:
-        "New Jobs posted on Freshersworld.com",
-      desc:
-        "Customer Support Executive Jobs",
-      time: "7:05 am",
-    },
+      const response = await API.get(
+        `/mail/inbox/${userEmail}`
+      );
 
-    {
-      sender: "Razorpay",
-      subject:
-        "Daily Transaction Report",
-      desc:
-        "Daily report for your account",
-      time: "12:13 am",
-    },
+      dispatch({
+        type: "SET_MAILS",
+        payload: response.data,
+      });
+    } catch (error) {
+      dispatch({
+        type: "SET_ERROR",
+        payload: error.message,
+      });
+    } finally {
+      dispatch({
+        type: "SET_LOADING",
+        payload: false,
+      });
+    }
+  };
 
-  ];
+  useEffect(() => {
+    fetchMails();
+  }, []);
+
+  const markAsRead = async (id) => {
+    try {
+      await API.put(`/mail/read/${id}`);
+
+      dispatch({
+        type: "MARK_AS_READ",
+        payload: id,
+      });
+    } catch (error) {
+      console.log(
+        "Error marking as read:",
+        error
+      );
+    }
+  };
+
+  const handleMailClick = (mail) => {
+    if (!mail.read) {
+      markAsRead(mail.id);
+    }
+    navigate(`/message/${mail.id}`, {
+      state: { mail },
+    });
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("email");
+    navigate("/login");
+  };
 
   return (
+    <div className="inbox-container">
+      {/* Header */}
+      <div className="inbox-header">
+        <Container fluid>
+          <Row className="align-items-center">
+            <Col md={3}>
+              <div className="logo-section">
+                <img
+                  src="https://www.yahoo.com/favicon.ico"
+                  alt="Yahoo"
+                  className="yahoo-logo"
+                />
+                <span className="brand-text">
+                  Mail
+                </span>
+              </div>
+            </Col>
 
-    <div className="mail-app">
+            <Col md={6}>
+              <InputGroup className="search-bar">
+                <Form.Control
+                  placeholder="Search mail"
+                  className="search-input"
+                />
+                <Button
+                  variant="outline-secondary"
+                  className="search-btn"
+                >
+                  <BsSearch />
+                </Button>
+              </InputGroup>
+            </Col>
 
-      {/* Navbar */}
-
-      <div className="topbar">
-
-        <div className="logo">
-          yahoo/mail
-        </div>
-
-        <div className="search-box">
-
-          <Form.Control
-            type="text"
-            placeholder="Find messages, documents, photos or people"
-            className="search-input"
-          />
-
-          <Button className="search-btn">
-            <BsSearch />
-          </Button>
-
-        </div>
-
+            <Col
+              md={3}
+              className="text-end"
+            >
+              <span className="user-email">
+                {userEmail}
+              </span>
+              <Button
+                variant="link"
+                className="logout-btn"
+                onClick={handleLogout}
+              >
+                Logout
+              </Button>
+            </Col>
+          </Row>
+        </Container>
       </div>
 
-      {/* Main Layout */}
-
-      <Container fluid>
-
+      {/* Main Content */}
+      <Container fluid className="main-content">
         <Row>
-
           {/* Sidebar */}
-
-          <Col
-            md={2}
-            className="sidebar"
-          >
-
-            <Button className="compose-btn">
+          <Col md={2} className="sidebar">
+            <Button
+              variant="primary"
+              className="compose-btn"
+              onClick={() =>
+                navigate("/compose")
+              }
+            >
               Compose
             </Button>
 
-            <div className="menu active-menu">
-              Inbox
-              <span>999+</span>
-            </div>
+            <ListGroup className="mail-folders">
+              <ListGroup.Item
+                action
+                active
+                className="folder-item"
+              >
+                Inbox
+                {state.unreadCount > 0 && (
+                  <Badge
+                    bg="primary"
+                    className="ms-2"
+                  >
+                    {state.unreadCount}
+                  </Badge>
+                )}
+              </ListGroup.Item>
 
-            <div className="menu">
-              Unread
-            </div>
+              <ListGroup.Item
+                action
+                className="folder-item"
+              >
+                Unread
+              </ListGroup.Item>
 
-            <div className="menu">
-              Starred
-            </div>
+              <ListGroup.Item
+                action
+                className="folder-item"
+              >
+                <BsStar className="me-2" />
+                Starred
+              </ListGroup.Item>
 
-            <div className="menu">
-              Drafts
-            </div>
+              <ListGroup.Item
+                action
+                className="folder-item"
+              >
+                Sent
+              </ListGroup.Item>
 
-            <div className="menu">
-              Sent
-            </div>
-
-            <div className="menu">
-              Archive
-            </div>
-
-            <div className="menu">
-              Spam
-            </div>
-
-            <div className="menu">
-              Deleted Items
-            </div>
-
+              <ListGroup.Item
+                action
+                className="folder-item"
+              >
+                <BsTrash className="me-2" />
+                Trash
+              </ListGroup.Item>
+            </ListGroup>
           </Col>
 
-          {/* Mail Section */}
-
-          <Col
-            md={10}
-            className="mail-section"
-          >
-
+          {/* Mail List */}
+          <Col md={10} className="mail-list">
             {/* Toolbar */}
-
             <div className="toolbar">
+              <Button
+                variant="light"
+                className="toolbar-btn"
+                onClick={fetchMails}
+              >
+                <BsArrowLeft />
+              </Button>
 
-              <BsArchive size={20} />
-              <BsTrash size={20} />
-              <BsThreeDots size={20} />
+              <Button
+                variant="light"
+                className="toolbar-btn"
+              >
+                <BsTrash />
+              </Button>
 
+              <Button
+                variant="light"
+                className="toolbar-btn"
+              >
+                <BsStar />
+              </Button>
             </div>
 
-            {/* Mail List */}
+            {/* Mail Items */}
+            {state.loading ? (
+              <div className="text-center p-5">
+                Loading...
+              </div>
+            ) : state.mails.length ===
+              0 ? (
+              <div className="text-center p-5 text-muted">
+                No mails found
+              </div>
+            ) : (
+              <ListGroup>
+                {state.mails.map(
+                  (mail) => (
+                    <ListGroup.Item
+                      key={mail.id}
+                      className={`mail-item ${
+                        !mail.read
+                          ? "unread"
+                          : ""
+                      }`}
+                      onClick={() =>
+                        handleMailClick(
+                          mail
+                        )
+                      }
+                    >
+                      <Row className="align-items-center">
+                        <Col
+                          md={1}
+                          className="mail-checkbox"
+                        >
+                          <Form.Check
+                            type="checkbox"
+                            onClick={(e) =>
+                              e.stopPropagation()
+                            }
+                          />
+                        </Col>
 
-            <div className="mail-list">
+                        <Col
+                          md={1}
+                          className="mail-star"
+                        >
+                          <BsStar />
+                        </Col>
 
-              {mails.map((mail, index) => (
+                        <Col
+                          md={2}
+                          className="sender-name"
+                        >
+                          {!mail.read && (
+                            <span className="blue-dot"></span>
+                          )}
+                          {mail.sender}
+                        </Col>
 
-                <div
-                  className="mail-row"
-                  key={index}
-                >
+                        <Col
+                          md={6}
+                          className="mail-preview"
+                        >
+                          <span className="subject">
+                            {
+                              mail.subject
+                            }
+                          </span>
+                          <span className="message-preview">
+                            {" "}
+                            -{" "}
+                            {mail.message
+                              ? mail.message.replace(
+                                  /<[^>]*>/g,
+                                  ""
+                                )
+                              : ""}
+                          </span>
+                        </Col>
 
-                  <div className="mail-left">
-
-                    <input type="checkbox" />
-
-                    <BsStar
-                      size={16}
-                      className="star-icon"
-                    />
-
-                    <span className="sender">
-                      {mail.sender}
-                    </span>
-
-                  </div>
-
-                  <div className="mail-center">
-
-                    <span className="subject">
-                      {mail.subject}
-                    </span>
-
-                    <span className="desc">
-                      {" "}
-                      - {mail.desc}
-                    </span>
-
-                  </div>
-
-                  <div className="mail-time">
-                    {mail.time}
-                  </div>
-
-                </div>
-
-              ))}
-
-            </div>
-
+                        <Col
+                          md={2}
+                          className="mail-date text-end"
+                        >
+                          {new Date(
+                            mail.created_at
+                          ).toLocaleDateString()}
+                        </Col>
+                      </Row>
+                    </ListGroup.Item>
+                  )
+                )}
+              </ListGroup>
+            )}
           </Col>
-
         </Row>
-
       </Container>
-
     </div>
   );
 }

@@ -15,6 +15,8 @@ import Welcome from "./components/Welcome";
 import ComposeMail from "./components/ComposeMail";
 
 import Inbox from "./components/Inbox";
+
+import MessageDetails from "./components/MessageDetails";
 function App() {
 
   return (
@@ -55,6 +57,13 @@ function App() {
         <Route
           path="/inbox"
           element={<Inbox />}
+        />
+
+        {/* Message Details */}
+
+        <Route
+          path="/message/:id"
+          element={<MessageDetails />}
         />        
       </Routes>
 
