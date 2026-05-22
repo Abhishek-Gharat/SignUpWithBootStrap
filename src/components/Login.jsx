@@ -9,13 +9,15 @@ import {
   Button,
 } from "react-bootstrap";
 
-import { Link, useNavigate } from "react-router-dom";
+import { FaEyeSlash } from "react-icons/fa";
 
-import "./Signup.css";
+import "./Login.css";
+
+import { useNavigate } from "react-router-dom";
 
 import API from "../api";
 
-function Signup() {
+function Login() {
 
   const navigate = useNavigate();
 
@@ -25,10 +27,6 @@ function Signup() {
   const [password, setPassword] =
     useState("");
 
-  const [confirmPassword,
-    setConfirmPassword] =
-    useState("");
-
   const [loading, setLoading] =
     useState(false);
 
@@ -36,20 +34,10 @@ function Signup() {
 
     e.preventDefault();
 
-    if (
-      !email ||
-      !password ||
-      !confirmPassword
-    ) {
-      return alert(
-        "All fields are mandatory"
-      );
-    }
+    if (!email || !password) {
 
-    if (password !== confirmPassword) {
-      return alert(
-        "Passwords do not match"
-      );
+      return alert("Please fill all fields");
+
     }
 
     try {
@@ -57,22 +45,32 @@ function Signup() {
       setLoading(true);
 
       const response = await API.post(
-        "/auth/signup",
+        "/auth/login",
         {
           email,
           password,
         }
       );
 
+      localStorage.setItem(
+        "token",
+        response.data.token
+      );
+
+      localStorage.setItem(
+        "email",
+        email
+      );
+
       alert(response.data.message);
 
-      navigate("/login");
+      navigate("/welcome");
 
     } catch (error) {
 
       alert(
         error.response?.data?.message ||
-        "Signup failed"
+        "Login failed"
       );
 
     } finally {
@@ -84,7 +82,7 @@ function Signup() {
 
   return (
 
-    <div className="signup-page">
+    <div className="login-page">
 
       {/* Blue Shape */}
 
@@ -96,10 +94,10 @@ function Signup() {
 
           <Col md={4} lg={3}>
 
-            <Card className="signup-card p-4">
+            <Card className="login-card p-4">
 
               <h1 className="text-center mb-5">
-                SignUp
+                Login
               </h1>
 
               <Form onSubmit={handleSubmit}>
@@ -122,11 +120,11 @@ function Signup() {
 
                 {/* Password */}
 
-                <Form.Group className="mb-4">
+                <div className="password-wrapper mb-4">
 
                   <Form.Control
                     type="password"
-                    placeholder="Password"
+                    placeholder="password"
                     className="custom-input"
                     value={password}
                     onChange={(e) =>
@@ -134,48 +132,40 @@ function Signup() {
                     }
                   />
 
-                </Form.Group>
+                  <FaEyeSlash className="eye-icon" />
 
-                {/* Confirm Password */}
-
-                <Form.Group className="mb-4">
-
-                  <Form.Control
-                    type="password"
-                    placeholder="Confirm Password"
-                    className="custom-input"
-                    value={confirmPassword}
-                    onChange={(e) =>
-                      setConfirmPassword(
-                        e.target.value
-                      )
-                    }
-                  />
-
-                </Form.Group>
+                </div>
 
                 {/* Button */}
 
                 <Button
                   type="submit"
-                  className="signup-btn w-100"
+                  className="login-btn w-100"
                   disabled={loading}
                 >
-                  {loading ? "Signing up..." : "Sign up"}
+                  {loading ? "Logging in..." : "Login"}
                 </Button>
+
+                <div className="forgot-password">
+
+                  <a href="/">
+                    Forgot password
+                  </a>
+
+                </div>
 
               </Form>
 
             </Card>
 
-            {/* Login Box */}
+            {/* Signup Box */}
 
-            <div className="login-box">
+            <div className="signup-box">
 
-              Have an account?
-              <Link to="/login">
-                {" "}Login
-              </Link>
+              Don't have an account?
+              <a href="/">
+                {" "}Sign up
+              </a>
 
             </div>
 
@@ -189,4 +179,4 @@ function Signup() {
   );
 }
 
-export default Signup;
+export default Login;

@@ -1,12 +1,60 @@
-import React from 'react';
+import React from "react";
 
-import Signup from './components/Signup';
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+} from "react-router-dom";
+
+import Signup from "./components/Signup";
+
+import Login from "./components/Login";
+
+import Welcome from "./components/Welcome";
+
+import ComposeMail from "./components/ComposeMail";
 
 function App() {
+
   return (
- <div>
-    <Signup />
- </div>
+
+    <BrowserRouter>
+
+      <Routes>
+
+        {/* Signup */}
+
+        <Route
+          path="/"
+          element={<Signup />}
+        />
+
+        {/* Login */}
+
+        <Route
+          path="/login"
+          element={<Login />}
+        />
+
+        {/* Welcome */}
+
+        <Route
+          path="/welcome"
+          element={<Welcome />}
+        />
+
+        {/* Compose Mail */}
+
+        <Route
+          path="/compose"
+          element={<ComposeMail />}
+        />
+
+      </Routes>
+
+    </BrowserRouter>
+
   );
 }
+
 export default App;
