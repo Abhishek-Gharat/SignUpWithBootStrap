@@ -14,6 +14,7 @@ import Welcome from "./components/Welcome";
 
 import ComposeMail from "./components/ComposeMail";
 
+import Inbox from "./components/Inbox";
 function App() {
 
   return (
@@ -49,7 +50,12 @@ function App() {
           path="/compose"
           element={<ComposeMail />}
         />
+        {/* Inbox */}
 
+        <Route
+          path="/inbox"
+          element={<Inbox />}
+        />        
       </Routes>
 
     </BrowserRouter>
