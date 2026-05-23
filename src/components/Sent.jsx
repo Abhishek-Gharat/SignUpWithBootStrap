@@ -22,15 +22,15 @@ import API from "../api";
 import { mailReducer, initialState } from "../reducers/mailReducer";
 import "./Inbox.css";
 
-function Inbox() {
+function Sent() {
   const navigate = useNavigate();
   const [state, dispatch] = useReducer(mailReducer, initialState);
   const userEmail = localStorage.getItem("email");
 
-  const fetchMails = async () => {
+  const fetchSentMails = async () => {
     try {
       dispatch({ type: "SET_LOADING", payload: true });
-      const response = await API.get(`/mail/inbox/${userEmail}`);
+      const response = await API.get(`/mail/sent/${userEmail}`);
       dispatch({ type: "SET_MAILS", payload: response.data });
     } catch (error) {
       dispatch({
@@ -43,7 +43,7 @@ function Inbox() {
   };
 
   useEffect(() => {
-    fetchMails();
+    fetchSentMails();
     // eslint-disable-next-line
   }, []);
 
@@ -69,7 +69,7 @@ function Inbox() {
 
   const handleMailClick = (mail) => {
     if (!mail.read) markAsRead(mail.id);
-    navigate(`/message/${mail.id}`, { state: { mail } });
+    navigate(`/message/${mail.id}`, { state: { mail, fromSent: true } });
   };
 
   const handleLogout = () => {
@@ -138,8 +138,8 @@ function Inbox() {
             <ListGroup className="mail-folders">
               <ListGroup.Item
                 action
-                active
                 className="folder-item"
+                onClick={() => navigate("/inbox")}
               >
                 Inbox
                 {state.unreadCount > 0 && (
@@ -166,8 +166,8 @@ function Inbox() {
 
               <ListGroup.Item
                 action
+                active
                 className="folder-item"
-                onClick={() => navigate("/sent")}
               >
                 Sent
               </ListGroup.Item>
@@ -198,8 +198,8 @@ function Inbox() {
               <Button
                 variant="light"
                 className="toolbar-btn"
-                onClick={fetchMails}
-                title="Refresh inbox"
+                onClick={fetchSentMails}
+                title="Refresh sent folder"
               >
                 ↻ Refresh
               </Button>
@@ -216,7 +216,7 @@ function Inbox() {
               <div className="text-center p-5">Loading...</div>
             ) : state.mails.length === 0 ? (
               <div className="text-center p-5 text-muted">
-                No mails found
+                No sent mails found
               </div>
             ) : (
               <ListGroup>
@@ -255,7 +255,7 @@ function Inbox() {
                         {!mail.read && (
                           <span className="blue-dot"></span>
                         )}
-                        {mail.sender}
+                        {mail.receiver}
                       </Col>
 
                       <Col
@@ -312,4 +312,4 @@ function Inbox() {
   );
 }
 
-export default Inbox;
+export default Sent;

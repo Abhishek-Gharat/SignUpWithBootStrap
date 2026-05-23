@@ -211,6 +211,25 @@
   font-size: 13px;
 }
 
+.mail-delete {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.delete-btn {
+  color: #666 !important;
+  padding: 6px 10px !important;
+  border-radius: 50% !important;
+  transition: all 0.2s;
+  text-decoration: none !important;
+}
+
+.delete-btn:hover {
+  background-color: #ffebee;
+  color: #d32f2f !important;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .sidebar {

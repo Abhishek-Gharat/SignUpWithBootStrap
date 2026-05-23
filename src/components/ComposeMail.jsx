@@ -5,15 +5,23 @@ import {
   Card,
   Form,
   Button,
+  Row,
+  Col,
 } from "react-bootstrap";
 
-import ReactQuill from "react-quill";
+import { BsArrowLeft } from "react-icons/bs";
+
+import CustomQuill from "./CustomQuill";
 
 import "react-quill/dist/quill.snow.css";
 
 import API from "../api";
 
+import { useNavigate } from "react-router-dom";
+
 function ComposeMail() {
+
+  const navigate = useNavigate();
 
   const [to, setTo] = useState("");
 
@@ -52,6 +60,8 @@ function ComposeMail() {
       setSubject("");
       setMessage("");
 
+      navigate("/inbox");
+
     } catch (error) {
 
       alert("Failed to send mail");
@@ -61,13 +71,26 @@ function ComposeMail() {
 
   return (
 
-    <Container className="mt-5">
+    <Container className="mt-3">
 
       <Card className="p-4">
 
-        <h2 className="mb-4">
-          Compose Mail
-        </h2>
+        <Row className="mb-4 align-items-center">
+          <Col md={6}>
+            <h2>
+              Compose Mail
+            </h2>
+          </Col>
+          <Col md={6} className="text-end">
+            <Button
+              variant="light"
+              onClick={() => navigate("/inbox")}
+              title="Back to Inbox"
+            >
+              <BsArrowLeft /> Back to Inbox
+            </Button>
+          </Col>
+        </Row>
 
         {/* Receiver */}
 
@@ -101,18 +124,32 @@ function ComposeMail() {
 
         {/* Text Editor */}
 
-        <ReactQuill
+        <CustomQuill
           theme="snow"
           value={message}
           onChange={setMessage}
         />
 
-        <Button
-          className="mt-4"
-          onClick={handleSend}
-        >
-          Send
-        </Button>
+        <Row className="mt-4">
+          <Col md={6}>
+            <Button
+              variant="secondary"
+              onClick={() => navigate("/inbox")}
+              className="w-100"
+            >
+              Cancel
+            </Button>
+          </Col>
+          <Col md={6}>
+            <Button
+              variant="primary"
+              onClick={handleSend}
+              className="w-100"
+            >
+              Send Mail
+            </Button>
+          </Col>
+        </Row>
 
       </Card>
 

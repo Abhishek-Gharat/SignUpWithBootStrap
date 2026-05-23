@@ -4,34 +4,29 @@ import {
   Row,
   Col,
   ListGroup,
-  Badge,
   Button,
-  Form,
-  InputGroup,
   Alert,
 } from "react-bootstrap";
 import {
-  BsSearch,
-  BsTrash,
-  BsStar,
   BsArrowLeft,
-  BsTrashFill,
+  BsTrash,
+  BsArrowCounterclockwise,
 } from "react-icons/bs";
 import { useNavigate } from "react-router-dom";
 import API from "../api";
 import { mailReducer, initialState } from "../reducers/mailReducer";
 import "./Inbox.css";
 
-function Inbox() {
+function Trash() {
   const navigate = useNavigate();
   const [state, dispatch] = useReducer(mailReducer, initialState);
   const userEmail = localStorage.getItem("email");
 
-  const fetchMails = async () => {
+  const fetchTrash = async () => {
     try {
       dispatch({ type: "SET_LOADING", payload: true });
-      const response = await API.get(`/mail/inbox/${userEmail}`);
-      dispatch({ type: "SET_MAILS", payload: response.data });
+      const response = await API.get(`/mail/trash/${userEmail}`);
+      dispatch({ type: "SET_TRASH_MAILS", payload: response.data });
     } catch (error) {
       dispatch({
         type: "SET_ERROR",
@@ -43,39 +38,34 @@ function Inbox() {
   };
 
   useEffect(() => {
-    fetchMails();
+    fetchTrash();
     // eslint-disable-next-line
   }, []);
 
-  const markAsRead = async (id) => {
+  const restoreMail = async (id) => {
     try {
-      await API.put(`/mail/read/${id}`);
-      dispatch({ type: "MARK_AS_READ", payload: id });
+      await API.put(`/mail/restore/${id}`);
+      dispatch({ type: "RESTORE_MAIL", payload: id });
     } catch (error) {
-      console.log("Error marking as read:", error);
+      console.log("Error restoring mail:", error);
+      alert("Failed to restore mail.");
     }
   };
 
-  const deleteMail = async (id, event) => {
-    event.stopPropagation();
+  const permanentDelete = async (id) => {
+    if (!window.confirm("Permanently delete this mail? This cannot be undone."))
+      return;
     try {
-      await API.put(`/mail/trash/${id}`);
-      dispatch({ type: "DELETE_MAIL", payload: id });
+      await API.delete(`/mail/permanent/${id}`);
+      dispatch({ type: "PERMANENT_DELETE_TRASH", payload: id });
     } catch (error) {
-      console.log("Error moving mail to trash:", error);
-      alert("Failed to move mail to trash.");
+      console.log("Error deleting mail:", error);
+      alert("Failed to delete mail.");
     }
   };
 
   const handleMailClick = (mail) => {
-    if (!mail.read) markAsRead(mail.id);
-    navigate(`/message/${mail.id}`, { state: { mail } });
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("email");
-    navigate("/login");
+    navigate(`/message/${mail.id}`, { state: { mail, fromTrash: true } });
   };
 
   return (
@@ -95,27 +85,16 @@ function Inbox() {
               </div>
             </Col>
             <Col md={6}>
-              <InputGroup className="search-bar">
-                <Form.Control
-                  placeholder="Search mail"
-                  className="search-input"
-                />
-                <Button
-                  variant="outline-secondary"
-                  className="search-btn"
-                >
-                  <BsSearch />
-                </Button>
-              </InputGroup>
+              <h5 className="m-0 text-muted">Trash Folder</h5>
             </Col>
             <Col md={3} className="text-end">
               <span className="user-email">{userEmail}</span>
               <Button
                 variant="link"
                 className="logout-btn"
-                onClick={handleLogout}
+                onClick={() => navigate("/inbox")}
               >
-                Logout
+                Back to Inbox
               </Button>
             </Col>
           </Row>
@@ -138,15 +117,10 @@ function Inbox() {
             <ListGroup className="mail-folders">
               <ListGroup.Item
                 action
-                active
                 className="folder-item"
+                onClick={() => navigate("/inbox")}
               >
                 Inbox
-                {state.unreadCount > 0 && (
-                  <Badge bg="primary" className="ms-2">
-                    {state.unreadCount}
-                  </Badge>
-                )}
               </ListGroup.Item>
 
               <ListGroup.Item
@@ -160,22 +134,13 @@ function Inbox() {
                 action
                 className="folder-item"
               >
-                <BsStar className="me-2" />
-                Starred
-              </ListGroup.Item>
-
-              <ListGroup.Item
-                action
-                className="folder-item"
-                onClick={() => navigate("/sent")}
-              >
                 Sent
               </ListGroup.Item>
 
               <ListGroup.Item
                 action
+                active
                 className="folder-item"
-                onClick={() => navigate("/trash")}
               >
                 <BsTrash className="me-2" />
                 Trash
@@ -183,7 +148,7 @@ function Inbox() {
             </ListGroup>
           </Col>
 
-          {/* Mail List */}
+          {/* Trash List */}
           <Col md={10} className="mail-list">
             {/* Toolbar */}
             <div className="toolbar">
@@ -198,8 +163,8 @@ function Inbox() {
               <Button
                 variant="light"
                 className="toolbar-btn"
-                onClick={fetchMails}
-                title="Refresh inbox"
+                onClick={fetchTrash}
+                title="Refresh trash folder"
               >
                 ↻ Refresh
               </Button>
@@ -216,50 +181,26 @@ function Inbox() {
               <div className="text-center p-5">Loading...</div>
             ) : state.mails.length === 0 ? (
               <div className="text-center p-5 text-muted">
-                No mails found
+                Trash is empty
               </div>
             ) : (
               <ListGroup>
                 {state.mails.map((mail) => (
                   <ListGroup.Item
                     key={mail.id}
-                    className={`mail-item ${
-                      !mail.read ? "unread" : ""
-                    }`}
+                    className="mail-item"
                     onClick={() => handleMailClick(mail)}
                   >
                     <Row className="align-items-center">
                       <Col
-                        md={1}
-                        className="mail-checkbox"
-                      >
-                        <Form.Check
-                          type="checkbox"
-                          onClick={(e) =>
-                            e.stopPropagation()
-                          }
-                        />
-                      </Col>
-
-                      <Col
-                        md={1}
-                        className="mail-star"
-                      >
-                        <BsStar />
-                      </Col>
-
-                      <Col
-                        md={2}
+                        md={3}
                         className="sender-name"
                       >
-                        {!mail.read && (
-                          <span className="blue-dot"></span>
-                        )}
                         {mail.sender}
                       </Col>
 
                       <Col
-                        md={6}
+                        md={5}
                         className="mail-preview"
                       >
                         <span className="subject">
@@ -277,27 +218,39 @@ function Inbox() {
                       </Col>
 
                       <Col
-                        md={1}
+                        md={2}
                         className="mail-date"
                       >
                         {new Date(
-                          mail.created_at
+                          mail.trashed_at || mail.created_at
                         ).toLocaleDateString()}
                       </Col>
 
                       <Col
-                        md={1}
-                        className="mail-delete text-end"
+                        md={2}
+                        className="text-end"
                       >
                         <Button
-                          variant="link"
-                          className="delete-btn"
-                          onClick={(e) =>
-                            deleteMail(mail.id, e)
-                          }
-                          title="Delete mail"
+                          variant="light"
+                          size="sm"
+                          className="me-2"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            restoreMail(mail.id);
+                          }}
                         >
-                          <BsTrashFill />
+                          <BsArrowCounterclockwise />{" "}
+                          Restore
+                        </Button>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            permanentDelete(mail.id);
+                          }}
+                        >
+                          <BsTrash /> Delete
                         </Button>
                       </Col>
                     </Row>
@@ -312,4 +265,4 @@ function Inbox() {
   );
 }
 
-export default Inbox;
+export default Trash;
