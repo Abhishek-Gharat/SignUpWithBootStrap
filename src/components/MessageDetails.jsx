@@ -19,7 +19,7 @@ import "./MessageDetails.css";
 function MessageDetails() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { mail } = location.state || {};
+  const { mail, fromSent } = location.state || {};
 
   if (!mail) {
     return (
@@ -39,7 +39,8 @@ function MessageDetails() {
     if (!window.confirm("Are you sure you want to delete this mail?")) return;
     try {
       await API.delete(`/mail/delete/${mail.id}`);
-      navigate("/inbox");
+      // Navigate back to the appropriate folder based on where user came from
+      navigate(fromSent ? "/sent" : "/inbox");
     } catch (error) {
       console.log("Error deleting mail:", error);
       alert("Failed to delete mail.");
@@ -56,9 +57,9 @@ function MessageDetails() {
               <Button
                 variant="light"
                 className="back-btn"
-                onClick={() => navigate("/inbox")}
+                onClick={() => navigate(fromSent ? "/sent" : "/inbox")}
               >
-                <BsArrowLeft /> Back to Inbox
+                <BsArrowLeft /> Back to {fromSent ? "Sent" : "Inbox"}
               </Button>
             </Col>
           </Row>

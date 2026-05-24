@@ -1,0 +1,10 @@
+{
+  "status": "sent-mail-fix-completed",
+  "description": "Fixed sent mail navigation - MessageDetails now handles fromSent flag",
+  "changes": [
+    "Added fromSent flag extraction in MessageDetails.jsx",
+    "Back button now navigates to /sent or /inbox based on fromSent",
+    "Delete now returns to appropriate folder",
+    "Sent.jsx passes fromSent: true when navigating to message"
+  ]
+}
