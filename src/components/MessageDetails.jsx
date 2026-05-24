@@ -1,0 +1,130 @@
+import React from "react";
+import {
+  Container,
+  Row,
+  Col,
+  Card,
+  Button,
+} from "react-bootstrap";
+import {
+  BsArrowLeft,
+  BsReply,
+  BsTrash,
+  BsStar,
+} from "react-icons/bs";
+import { useLocation, useNavigate } from "react-router-dom";
+import API from "../api";
+import "./MessageDetails.css";
+
+function MessageDetails() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { mail } = location.state || {};
+
+  if (!mail) {
+    return (
+      <Container className="mt-5 text-center">
+        <h4>No mail selected</h4>
+        <Button
+          variant="primary"
+          onClick={() => navigate("/inbox")}
+        >
+          Go to Inbox
+        </Button>
+      </Container>
+    );
+  }
+
+  const deleteMail = async () => {
+    if (!window.confirm("Are you sure you want to delete this mail?")) return;
+    try {
+      await API.delete(`/mail/delete/${mail.id}`);
+      navigate("/inbox");
+    } catch (error) {
+      console.log("Error deleting mail:", error);
+      alert("Failed to delete mail.");
+    }
+  };
+
+  return (
+    <div className="message-details-container">
+      {/* Header */}
+      <div className="message-header">
+        <Container fluid>
+          <Row className="align-items-center">
+            <Col>
+              <Button
+                variant="light"
+                className="back-btn"
+                onClick={() => navigate("/inbox")}
+              >
+                <BsArrowLeft /> Back to Inbox
+              </Button>
+            </Col>
+          </Row>
+        </Container>
+      </div>
+
+      {/* Message Content */}
+      <Container fluid className="message-content">
+        <Card className="message-card">
+          <Card.Header className="message-header-section">
+            <Row className="align-items-center">
+              <Col md={8}>
+                <h4 className="message-subject">
+                  {mail.subject}
+                </h4>
+                <div className="sender-info">
+                  <strong>From:</strong> {mail.sender}
+                </div>
+                <div className="receiver-info">
+                  <strong>To:</strong> {mail.receiver}
+                </div>
+                <div className="message-date">
+                  {new Date(
+                    mail.created_at
+                  ).toLocaleString()}
+                </div>
+              </Col>
+
+              <Col md={4} className="text-end">
+                <Button
+                  variant="light"
+                  className="action-btn"
+                >
+                  <BsReply /> Reply
+                </Button>
+
+                <Button
+                  variant="light"
+                  className="action-btn"
+                >
+                  <BsStar /> Star
+                </Button>
+
+                <Button
+                  variant="light"
+                  className="action-btn"
+                  onClick={deleteMail}
+                >
+                  <BsTrash /> Delete
+                </Button>
+              </Col>
+            </Row>
+          </Card.Header>
+
+          <Card.Body className="message-body">
+            <div
+              className="message-text"
+              dangerouslySetInnerHTML={{
+                __html: mail.message,
+              }}
+            />
+          </Card.Body>
+        </Card>
+      </Container>
+    </div>
+  );
+}
+
+export default MessageDetails;
