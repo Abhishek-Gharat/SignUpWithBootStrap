@@ -13,7 +13,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import "./Signup.css";
 
-import API from "../api";
+import { useAuth } from "../hooks/useAuth";
 
 function Signup() {
 
@@ -28,9 +28,9 @@ function Signup() {
   const [confirmPassword,
     setConfirmPassword] =
     useState("");
-
-  const [loading, setLoading] =
-    useState(false);
+  
+  // Custom hook for auth operations
+  const { signup, loading, error } = useAuth();
 
   const handleSubmit = async (e) => {
 
@@ -54,30 +54,18 @@ function Signup() {
 
     try {
 
-      setLoading(true);
+      const response = await signup(email, password);
 
-      const response = await API.post(
-        "/auth/signup",
-        {
-          email,
-          password,
-        }
-      );
-
-      alert(response.data.message);
+      alert(response.message);
 
       navigate("/login");
 
-    } catch (error) {
+    } catch (err) {
 
       alert(
-        error.response?.data?.message ||
+        error ||
         "Signup failed"
       );
-
-    } finally {
-
-      setLoading(false);
 
     }
   };

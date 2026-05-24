@@ -13,13 +13,25 @@ import {
   BsStar,
 } from "react-icons/bs";
 import { useLocation, useNavigate } from "react-router-dom";
-import API from "../api";
+import { useApi } from "../hooks/useApi";
 import "./MessageDetails.css";
 
 function MessageDetails() {
   const navigate = useNavigate();
   const location = useLocation();
   const { mail, fromSent } = location.state || {};
+  
+  // Custom hook for API operations
+  const deleteApi = useApi({
+    onSuccess: () => {
+      // Navigate back to the appropriate folder based on where user came from
+      navigate(fromSent ? "/sent" : "/inbox");
+    },
+    onError: (error) => {
+      console.log("Error deleting mail:", error);
+      alert("Failed to delete mail.");
+    }
+  });
 
   if (!mail) {
     return (
@@ -35,16 +47,9 @@ function MessageDetails() {
     );
   }
 
-  const deleteMail = async () => {
+  const handleDeleteMail = async () => {
     if (!window.confirm("Are you sure you want to delete this mail?")) return;
-    try {
-      await API.delete(`/mail/delete/${mail.id}`);
-      // Navigate back to the appropriate folder based on where user came from
-      navigate(fromSent ? "/sent" : "/inbox");
-    } catch (error) {
-      console.log("Error deleting mail:", error);
-      alert("Failed to delete mail.");
-    }
+    await deleteApi.execute("delete", `/mail/delete/${mail.id}`);
   };
 
   return (
@@ -106,7 +111,7 @@ function MessageDetails() {
                 <Button
                   variant="light"
                   className="action-btn"
-                  onClick={deleteMail}
+                  onClick={handleDeleteMail}
                 >
                   <BsTrash /> Delete
                 </Button>

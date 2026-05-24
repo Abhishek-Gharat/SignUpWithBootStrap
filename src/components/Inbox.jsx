@@ -1,4 +1,4 @@
-import React, { useEffect, useReducer, useRef, useCallback } from "react";
+import React, { useEffect, useReducer } from "react";
 import {
   Container,
   Row,
@@ -18,79 +18,42 @@ import {
   BsTrashFill,
 } from "react-icons/bs";
 import { useNavigate } from "react-router-dom";
-import API from "../api";
 import { mailReducer, initialState } from "../reducers/mailReducer";
+import { useMails } from "../hooks/useMails";
 import "./Inbox.css";
 
 function Inbox() {
   const navigate = useNavigate();
   const [state, dispatch] = useReducer(mailReducer, initialState);
   const userEmail = localStorage.getItem("email");
-  const intervalRef = useRef(null);
-  const isFirstLoad = useRef(true);
-
-  const fetchMails = useCallback(async (isPolling = false) => {
-    try {
-      // Only show loading on first load, not during polling
-      if (!isPolling) {
-        dispatch({ type: "SET_LOADING", payload: true });
-      }
-      const response = await API.get(`/mail/inbox/${userEmail}`);
-      dispatch({ 
-        type: isPolling ? "UPDATE_MAILS" : "SET_MAILS", 
-        payload: response.data 
-      });
-    } catch (error) {
-      dispatch({
-        type: "SET_ERROR",
-        payload: error.response?.data?.message || error.message,
-      });
-    } finally {
-      if (!isPolling) {
-        dispatch({ type: "SET_LOADING", payload: false });
-      }
-    }
-  }, [userEmail]);
+  
+  // Custom hook for mail operations
+  const { fetchInbox, markAsRead, moveToTrash, startInboxPolling, stopInboxPolling } = useMails(dispatch);
 
   useEffect(() => {
     // Initial fetch
-    fetchMails(false);
+    fetchInbox(userEmail, false);
     
-    // Set up polling every 2 seconds
-    intervalRef.current = setInterval(() => {
-      fetchMails(true);
-    }, 2000);
+    // Start polling every 2 seconds
+    startInboxPolling(userEmail, 2000);
 
-    // Cleanup interval on unmount
+    // Cleanup polling on unmount
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+      stopInboxPolling();
     };
-  }, [fetchMails]);
+  }, [userEmail, fetchInbox, startInboxPolling, stopInboxPolling]);
 
-  const markAsRead = async (id) => {
-    try {
-      await API.put(`/mail/read/${id}`);
-      dispatch({ type: "MARK_AS_READ", payload: id });
-    } catch (error) {
-      console.log("Error marking as read:", error);
-    }
+  const handleMarkAsRead = async (id) => {
+    await markAsRead(id);
   };
 
-  const deleteMail = async (id, event) => {
+  const handleDeleteMail = async (id, event) => {
     event.stopPropagation();
-    try {
-      await API.put(`/mail/trash/${id}`);
-      dispatch({ type: "DELETE_MAIL", payload: id });
-    } catch (error) {
-      console.log("Error moving mail to trash:", error);
-      alert("Failed to move mail to trash.");
-    }
+    await moveToTrash(id);
   };
 
   const handleMailClick = (mail) => {
-    if (!mail.read) markAsRead(mail.id);
+    if (!mail.read) handleMarkAsRead(mail.id);
     navigate(`/message/${mail.id}`, { state: { mail } });
   };
 
@@ -220,7 +183,7 @@ function Inbox() {
               <Button
                 variant="light"
                 className="toolbar-btn"
-                onClick={fetchMails}
+                onClick={() => fetchInbox(userEmail, false)}
                 title="Refresh inbox"
               >
                 ↻ Refresh
@@ -315,7 +278,7 @@ function Inbox() {
                           variant="link"
                           className="delete-btn"
                           onClick={(e) =>
-                            deleteMail(mail.id, e)
+                            handleDeleteMail(mail.id, e)
                           }
                           title="Delete mail"
                         >

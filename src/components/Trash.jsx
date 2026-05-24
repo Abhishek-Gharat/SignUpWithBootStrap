@@ -13,55 +13,31 @@ import {
   BsArrowCounterclockwise,
 } from "react-icons/bs";
 import { useNavigate } from "react-router-dom";
-import API from "../api";
 import { mailReducer, initialState } from "../reducers/mailReducer";
+import { useMails } from "../hooks/useMails";
 import "./Inbox.css";
 
 function Trash() {
   const navigate = useNavigate();
   const [state, dispatch] = useReducer(mailReducer, initialState);
   const userEmail = localStorage.getItem("email");
-
-  const fetchTrash = async () => {
-    try {
-      dispatch({ type: "SET_LOADING", payload: true });
-      const response = await API.get(`/mail/trash/${userEmail}`);
-      dispatch({ type: "SET_TRASH_MAILS", payload: response.data });
-    } catch (error) {
-      dispatch({
-        type: "SET_ERROR",
-        payload: error.response?.data?.message || error.message,
-      });
-    } finally {
-      dispatch({ type: "SET_LOADING", payload: false });
-    }
-  };
+  
+  // Custom hook for mail operations
+  const { fetchTrash, restoreMail, permanentDelete } = useMails(dispatch);
 
   useEffect(() => {
-    fetchTrash();
+    fetchTrash(userEmail);
     // eslint-disable-next-line
   }, []);
 
-  const restoreMail = async (id) => {
-    try {
-      await API.put(`/mail/restore/${id}`);
-      dispatch({ type: "RESTORE_MAIL", payload: id });
-    } catch (error) {
-      console.log("Error restoring mail:", error);
-      alert("Failed to restore mail.");
-    }
+  const handleRestoreMail = async (id) => {
+    await restoreMail(id);
   };
 
-  const permanentDelete = async (id) => {
+  const handlePermanentDelete = async (id) => {
     if (!window.confirm("Permanently delete this mail? This cannot be undone."))
       return;
-    try {
-      await API.delete(`/mail/permanent/${id}`);
-      dispatch({ type: "PERMANENT_DELETE_TRASH", payload: id });
-    } catch (error) {
-      console.log("Error deleting mail:", error);
-      alert("Failed to delete mail.");
-    }
+    await permanentDelete(id);
   };
 
   const handleMailClick = (mail) => {
@@ -163,7 +139,7 @@ function Trash() {
               <Button
                 variant="light"
                 className="toolbar-btn"
-                onClick={fetchTrash}
+                onClick={() => fetchTrash(userEmail)}
                 title="Refresh trash folder"
               >
                 ↻ Refresh
@@ -236,7 +212,7 @@ function Trash() {
                           className="me-2"
                           onClick={(e) => {
                             e.stopPropagation();
-                            restoreMail(mail.id);
+                            handleRestoreMail(mail.id);
                           }}
                         >
                           <BsArrowCounterclockwise />{" "}
@@ -247,7 +223,7 @@ function Trash() {
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            permanentDelete(mail.id);
+                            handlePermanentDelete(mail.id);
                           }}
                         >
                           <BsTrash /> Delete

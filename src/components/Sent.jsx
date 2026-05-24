@@ -18,57 +18,34 @@ import {
   BsTrashFill,
 } from "react-icons/bs";
 import { useNavigate } from "react-router-dom";
-import API from "../api";
 import { mailReducer, initialState } from "../reducers/mailReducer";
+import { useMails } from "../hooks/useMails";
 import "./Inbox.css";
 
 function Sent() {
   const navigate = useNavigate();
   const [state, dispatch] = useReducer(mailReducer, initialState);
   const userEmail = localStorage.getItem("email");
-
-  const fetchSentMails = async () => {
-    try {
-      dispatch({ type: "SET_LOADING", payload: true });
-      const response = await API.get(`/mail/sent/${userEmail}`);
-      dispatch({ type: "SET_MAILS", payload: response.data });
-    } catch (error) {
-      dispatch({
-        type: "SET_ERROR",
-        payload: error.response?.data?.message || error.message,
-      });
-    } finally {
-      dispatch({ type: "SET_LOADING", payload: false });
-    }
-  };
+  
+  // Custom hook for mail operations
+  const { fetchSent, markAsRead, moveToTrash } = useMails(dispatch);
 
   useEffect(() => {
-    fetchSentMails();
+    fetchSent(userEmail);
     // eslint-disable-next-line
   }, []);
 
-  const markAsRead = async (id) => {
-    try {
-      await API.put(`/mail/read/${id}`);
-      dispatch({ type: "MARK_AS_READ", payload: id });
-    } catch (error) {
-      console.log("Error marking as read:", error);
-    }
+  const handleMarkAsRead = async (id) => {
+    await markAsRead(id);
   };
 
-  const deleteMail = async (id, event) => {
+  const handleDeleteMail = async (id, event) => {
     event.stopPropagation();
-    try {
-      await API.put(`/mail/trash/${id}`);
-      dispatch({ type: "DELETE_MAIL", payload: id });
-    } catch (error) {
-      console.log("Error moving mail to trash:", error);
-      alert("Failed to move mail to trash.");
-    }
+    await moveToTrash(id);
   };
 
   const handleMailClick = (mail) => {
-    if (!mail.read) markAsRead(mail.id);
+    if (!mail.read) handleMarkAsRead(mail.id);
     navigate(`/message/${mail.id}`, { state: { mail, fromSent: true } });
   };
 
@@ -198,7 +175,7 @@ function Sent() {
               <Button
                 variant="light"
                 className="toolbar-btn"
-                onClick={fetchSentMails}
+                onClick={() => fetchSent(userEmail)}
                 title="Refresh sent folder"
               >
                 ↻ Refresh
@@ -293,7 +270,7 @@ function Sent() {
                           variant="link"
                           className="delete-btn"
                           onClick={(e) =>
-                            deleteMail(mail.id, e)
+                            handleDeleteMail(mail.id, e)
                           }
                           title="Delete mail"
                         >

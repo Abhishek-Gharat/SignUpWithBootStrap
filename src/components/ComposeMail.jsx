@@ -15,7 +15,7 @@ import CustomQuill from "./CustomQuill";
 
 import "react-quill/dist/quill.snow.css";
 
-import API from "../api";
+import { useMails } from "../hooks/useMails";
 
 import { useNavigate } from "react-router-dom";
 
@@ -33,6 +33,9 @@ function ComposeMail() {
 
   const senderEmail =
     localStorage.getItem("email");
+  
+  // Custom hook for mail operations
+  const { sendMail } = useMails();
 
   const handleSend = async () => {
 
@@ -44,15 +47,12 @@ function ComposeMail() {
 
     try {
 
-      await API.post(
-        "/mail/send",
-        {
-          sender: senderEmail,
-          receiver: to,
-          subject,
-          message,
-        }
-      );
+      await sendMail({
+        sender: senderEmail,
+        receiver: to,
+        subject,
+        message,
+      });
 
       alert("Mail Sent");
 

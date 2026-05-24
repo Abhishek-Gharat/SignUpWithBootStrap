@@ -15,7 +15,7 @@ import "./Login.css";
 
 import { useNavigate } from "react-router-dom";
 
-import API from "../api";
+import { useAuth } from "../hooks/useAuth";
 
 function Login() {
 
@@ -26,9 +26,9 @@ function Login() {
 
   const [password, setPassword] =
     useState("");
-
-  const [loading, setLoading] =
-    useState(false);
+  
+  // Custom hook for auth operations
+  const { login, loading, error, setUserEmail } = useAuth();
 
   const handleSubmit = async (e) => {
 
@@ -42,40 +42,20 @@ function Login() {
 
     try {
 
-      setLoading(true);
+      const response = await login(email, password);
 
-      const response = await API.post(
-        "/auth/login",
-        {
-          email,
-          password,
-        }
-      );
+      setUserEmail(email);
 
-      localStorage.setItem(
-        "token",
-        response.data.token
-      );
-
-      localStorage.setItem(
-        "email",
-        email
-      );
-
-      alert(response.data.message);
+      alert(response.message);
 
       navigate("/welcome");
 
-    } catch (error) {
+    } catch (err) {
 
       alert(
-        error.response?.data?.message ||
+        error ||
         "Login failed"
       );
-
-    } finally {
-
-      setLoading(false);
 
     }
   };
