@@ -1,4 +1,4 @@
-import React, { useEffect, useReducer } from "react";
+import React, { useEffect, useReducer, useRef, useCallback } from "react";
 import {
   Container,
   Row,
@@ -26,26 +26,48 @@ function Inbox() {
   const navigate = useNavigate();
   const [state, dispatch] = useReducer(mailReducer, initialState);
   const userEmail = localStorage.getItem("email");
+  const intervalRef = useRef(null);
+  const isFirstLoad = useRef(true);
 
-  const fetchMails = async () => {
+  const fetchMails = useCallback(async (isPolling = false) => {
     try {
-      dispatch({ type: "SET_LOADING", payload: true });
+      // Only show loading on first load, not during polling
+      if (!isPolling) {
+        dispatch({ type: "SET_LOADING", payload: true });
+      }
       const response = await API.get(`/mail/inbox/${userEmail}`);
-      dispatch({ type: "SET_MAILS", payload: response.data });
+      dispatch({ 
+        type: isPolling ? "UPDATE_MAILS" : "SET_MAILS", 
+        payload: response.data 
+      });
     } catch (error) {
       dispatch({
         type: "SET_ERROR",
         payload: error.response?.data?.message || error.message,
       });
     } finally {
-      dispatch({ type: "SET_LOADING", payload: false });
+      if (!isPolling) {
+        dispatch({ type: "SET_LOADING", payload: false });
+      }
     }
-  };
+  }, [userEmail]);
 
   useEffect(() => {
-    fetchMails();
-    // eslint-disable-next-line
-  }, []);
+    // Initial fetch
+    fetchMails(false);
+    
+    // Set up polling every 2 seconds
+    intervalRef.current = setInterval(() => {
+      fetchMails(true);
+    }, 2000);
+
+    // Cleanup interval on unmount
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [fetchMails]);
 
   const markAsRead = async (id) => {
     try {

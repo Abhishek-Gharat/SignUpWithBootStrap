@@ -18,6 +18,35 @@ export const mailReducer = (state, action) => {
         error: null,
       };
 
+    case "UPDATE_MAILS": {
+      // Merge new mails with existing ones, preserving read status of existing mails
+      const existingMailIds = new Set(state.mails.map(m => m.id));
+      const newMails = action.payload.filter(m => !existingMailIds.has(m.id));
+      
+      // Update existing mails with any changes from server (except read status which we preserve locally)
+      const updatedMails = action.payload.map(newMail => {
+        const existingMail = state.mails.find(m => m.id === newMail.id);
+        if (existingMail) {
+          // Preserve local read status but update other fields
+          return { ...newMail, read: existingMail.read };
+        }
+        return newMail;
+      });
+      
+      // Combine: updated existing mails + any completely new mails
+      const mergedMails = [...updatedMails];
+      
+      // Sort by created_at descending (newest first)
+      mergedMails.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      
+      return {
+        ...state,
+        mails: mergedMails,
+        unreadCount: mergedMails.filter((mail) => !mail.read).length,
+        error: null,
+      };
+    }
+
     case "SET_TRASH_MAILS":
       return {
         ...state,
